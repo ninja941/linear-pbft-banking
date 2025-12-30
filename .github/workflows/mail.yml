@@ -1,0 +1,21 @@
+name: Submit Lab
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**'
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, 'submit lab')
+
+    steps:
+      - name: Notify server for submission
+        run: |
+          curl -X POST https://k6yqvgfwaxkpiiru3rlp6pi7te0hffuj.lambda-url.us-east-1.on.aws/submit \
+          -H "Content-Type: application/json" \
+          -d '{"student_repo": "${{ github.repository }}", "commit_hash": "${{ github.sha }}"}'
+#Adding fake comment to correct commit message

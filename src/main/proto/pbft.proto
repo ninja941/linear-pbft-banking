@@ -1,0 +1,199 @@
+syntax = "proto3";
+
+package pbft;
+import "google/protobuf/empty.proto";
+
+option java_package = "com.distributedsystems.pbft.proto";
+option java_multiple_files = true;
+option java_outer_classname = "PbftProto";
+
+message ClientRequest {
+  string clientId = 1;
+  string operation = 2;
+  string fromAccount = 3;
+  string toAccount = 4;
+  int64 amount = 5;
+  string timestamp = 6;
+  string clientDigest = 7;
+  bytes  clientSignature = 8;
+}
+
+message PrePrepare {
+  uint64 view = 1;
+  int64 sequence = 2;
+  string digest = 3;
+  ClientRequest request = 4;
+  string leaderId = 5;
+  bytes  signature = 6;
+}
+
+message Prepare {
+  uint64 view = 1;
+  int64 sequence = 2;
+  string digest = 3;
+  string replicaId = 4;
+  bytes  signature = 5;
+  bytes  thresholdShare = 6;
+}
+
+message Commit {
+  uint64 view = 1;
+  int64 sequence = 2;
+  string digest = 3;
+  string replicaId = 4;
+  bytes  signature = 5;
+  bytes  thresholdShare = 6;
+}
+
+message PreparedEntry {
+  int64 sequence = 1;
+  string digest = 2;
+  uint64 view = 3;
+  string clientId = 4;
+}
+
+message ViewChange {
+  uint64 newView = 1;
+  string replicaId = 2;
+  repeated PreparedEntry preparedMessages = 3;
+  CheckpointSummary checkpoint = 4;
+  CheckpointCertificate checkpoint_certificate = 5;
+  string signature = 6;
+}
+
+message NewView {
+  uint64 view = 1;
+  string newLeaderId = 2;
+  repeated ViewChange viewChanges = 3;
+  repeated PrePrepare includedPrePrepares = 4;
+  CheckpointSummary checkpoint = 5;
+  CheckpointCertificate checkpoint_certificate = 6;
+  string signature = 7;
+}
+
+message ClientReply {
+  string clientId = 1;
+  int64 sequence = 2;
+  string replicaId = 3;
+  string result = 4;
+  uint64 view = 5;
+  string signature = 6;
+}
+
+message Acknowledge {
+  bool success = 1;
+  string message = 2;
+  uint64 view = 3;
+  int64 sequence = 4;
+}
+message CommitCertificate {
+  uint64 view     = 1;
+  uint64 sequence = 2;
+  string digest   = 3;
+  repeated Commit commits = 4;
+  string leaderId = 5;
+  bytes  leaderSignature = 6;
+  bytes  thresholdSignature = 7;
+  bool   thresholdMode = 8;
+}
+
+message PrepareCertificate {
+  uint64 view     = 1;
+  uint64 sequence = 2;
+  string digest   = 3;
+  repeated Prepare prepares = 4;
+  string leaderId = 5;
+  bytes  leaderSignature = 6;
+  bytes  thresholdSignature = 7;
+  bool   thresholdMode = 8;
+}
+
+
+message CheckpointSummary {
+  int64  sequence = 1;
+  string label    = 2;
+  string digest   = 3;
+}
+
+
+message Reply {
+  int64 sequence = 1;
+  string status = 2;
+  string message = 3;
+  string clientId = 4;
+  int64 view = 5;
+  string replicaId = 6;
+}
+
+message AttackConfig {
+  string attackType = 1;
+  repeated int32 nodes = 2;
+  bool clear = 3;
+  repeated int32 victims = 4;
+}
+
+message RosterConfig {
+  repeated int32 live = 1;
+  repeated int32 dead = 2;
+}
+
+message TimerControl {
+  bool pause = 1;
+  string reason = 2;
+}
+message CheckpointCertificate {
+  int64 sequence = 1;
+  string digest = 2;
+  repeated CheckpointProof proofs = 3;
+}
+
+message CheckpointProof {
+  string replica_id = 1;
+  string signature = 2;
+}
+
+message CheckpointProofMessage {
+  CheckpointSummary summary = 1;
+  CheckpointProof proof = 2;
+}
+
+message CheckpointCertificateBroadcast {
+  CheckpointSummary summary = 1;
+  CheckpointCertificate certificate = 2;
+}
+
+
+// --- Checkpoint Fetch RPC ---
+message CheckpointStateRequest {
+  int64 sequence = 1;
+  string digest = 2;
+  string requester = 3;
+}
+
+message CheckpointState {
+  int64 sequence = 1;
+  string digest = 2;
+  string serialized_state_json = 3;
+}
+
+
+service PbftService {
+  rpc SubmitClientRequest (ClientRequest) returns (ClientReply);
+  rpc PrePreparePhase (PrePrepare) returns (Acknowledge);
+  rpc PreparePhase (Prepare) returns (Acknowledge);
+  rpc CommitPhase (Commit) returns (Acknowledge);
+  rpc ViewChangePhase (ViewChange) returns (Acknowledge);
+  rpc NewViewPhase (NewView) returns (Acknowledge);
+  rpc prepareCertificatePhase(PrepareCertificate) returns (Acknowledge);
+  rpc commitCertificatePhase(CommitCertificate) returns (Acknowledge);
+  rpc adminAttack(AttackConfig) returns (Acknowledge);
+  rpc adminRoster(RosterConfig) returns (Acknowledge);
+  rpc adminTimer(TimerControl) returns (Acknowledge);
+  rpc adminFlush(google.protobuf.Empty) returns (Acknowledge);
+  rpc checkpointProofPhase(CheckpointProofMessage) returns (Acknowledge);
+  rpc checkpointCertificatePhase(CheckpointCertificateBroadcast) returns (Acknowledge);
+
+  rpc getCheckpointState(CheckpointStateRequest) returns (CheckpointState);
+  rpc onClientReply (ClientReply) returns (Acknowledge);
+
+}

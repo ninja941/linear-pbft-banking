@@ -1,0 +1,6 @@
+Set Number,Transactions,Live,Byzantine,Attack
+1,"(A, J, 1)","[n1, n2, n3, n4, n5, n6, n7]","[n1]","[equivocation(n6, n7)]"
+,"(B, I, 1)",,,
+,"(C, H, 1)",,,
+,"(D, G, 1)",,,
+,(G),,,
